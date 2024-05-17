@@ -10,13 +10,13 @@ This package provides a tool to analyze ROS launchfiles. It is based on the [ros
 ## Installation
 
 ```bash
-pip install git+https://github.com/roslaunch-analyzer/roslaunch-analyze-server.git
+pip install git+https://github.com/roslaunch-analyzer/roslaunch-language-server.git
 ```
 
 or
 
 ```bash
-pipx install git+https://github.com/roslaunch-analyzer/roslaunch-analyze-server.git
+pipx install git+https://github.com/roslaunch-analyzer/roslaunch-language-server.git
 ```
 
 > [!NOTE]
