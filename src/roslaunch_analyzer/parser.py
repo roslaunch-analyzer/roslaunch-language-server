@@ -88,3 +88,4 @@ def create_entity_tree(
     logging.root.setLevel("INFO")
 
     return entity_tree
+    # return {}

@@ -38,7 +38,3 @@ class IncludeLaunchDescriptionNode(LaunchTreeNode):
             sub_entities = self.entity.visit(self.context)
         except Exception as e:
             print(f"error in {self.entity.__class__}: {e}")
-
-
-x = IncludeLaunchDescriptionNode("entity")
-print(LaunchTreeNode.action_to_node)
