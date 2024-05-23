@@ -6,7 +6,7 @@ cli = typer.Typer()
 
 
 @cli.command()
-def run(port: int = 8083):
+def run(port: int = None):
     from roslaunch_language_server.sever import server
 
     print(f"Starting roslaunch-language-server on port {port}")
