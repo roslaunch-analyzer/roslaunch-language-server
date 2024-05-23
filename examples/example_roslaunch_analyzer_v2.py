@@ -1,9 +1,9 @@
-import json
+from roslaunch_analyzer_v2.command import command2tree
 
-from roslaunch_analyzer_v2 import launch_command
+tree = command2tree(
+    "ros2 launch autoware_launch planning_simulator.launch.xml "
+    "map_path:=$HOME/autoware_map/sample-map-planning/ "
+    "vehicle_model:=sample_vehicle"
+)
 
-tree = launch_command.parse("ros2 launch examples_rclcpp_minimal publisher.launch.py")
-
-tree.visit()
-
-print(json.dumps(tree))
+tree.build()

@@ -4,11 +4,7 @@ import re
 from typing import List
 
 # from ament_index_python.packages import get_package_share_directory
-from lsprotocol.types import (
-    Position,
-    TextDocumentItem,
-    Location,
-)
+from lsprotocol.types import Location, Position, TextDocumentItem
 
 
 class DefinitionFeature:

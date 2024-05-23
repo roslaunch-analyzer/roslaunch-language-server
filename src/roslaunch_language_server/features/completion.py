@@ -13,6 +13,8 @@ from lsprotocol.types import (
 
 from roslaunch_language_server.utils import all_env_vars, all_ros_packages
 
+import xml.etree.ElementTree as ET
+
 
 class CompleionFeature:
     @property
@@ -160,6 +162,34 @@ class FindPkgSharePathCompletion(CompleionFeature):
                 ),
             )
         )
+
+
+class VarCompletion(CompleionFeature):
+
+    pattern = re.compile(r"\".*?\$\((?P<var_name_head>[a-zA-Z0-9_-]*)$")
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def complete(
+        self, doc: TextDocumentItem, pos: Position, match: re.Match
+    ) -> List[CompletionItem]:
+        try:
+            root = ET.fromstring(doc.text)
+        except ET.ParseError:
+            return []
+        var_name_head: str = match.group("var_name_head")
+        # pattern = re.compile(r"^" + var_name_head + r"[a-zA-Z0-9_-]*")
+        # return list(
+        #     map(
+        #         lambda match: CompletionItem(
+        #             label=match.string,
+        #             kind=CompletionItemKind.Variable,
+        #             insert_text_format=InsertTextFormat.PlainText,
+        #         ),
+        #         filter(lambda x: x, map(lambda x: pattern.match(x), all_env_vars)),
+        #     )
+        # )
 
 
 completion_features: List[CompleionFeature] = [
