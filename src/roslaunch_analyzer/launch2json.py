@@ -26,6 +26,7 @@ class LaunchInfo:
         argv = launch_command.replace("ros2 launch ", "").split(" ")
 
         if os.path.isfile(argv[0]):
+            print("HERE")
             launch_file_path = argv[0]
             return cls(
                 launch_file_path=launch_file_path,
@@ -60,6 +61,7 @@ def get_entity_and_launch_service(launch_info: LaunchInfo):
 @cache
 def analyse_launch_structure(launch_command: Text):
     launch_info = LaunchInfo.from_command(launch_command)
+    print(launch_info)
     root_entity, launch_service = get_entity_and_launch_service(launch_info)
     raw_tree = create_entity_tree(root_entity, launch_service)
     filtered_tree = filter_entity_tree(raw_tree.copy())
