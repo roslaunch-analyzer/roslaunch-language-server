@@ -57,15 +57,13 @@ def on_completion(ls: LanguageServer, params: types.CompletionParams):
         if match is None:
             continue
         ls.show_message_log(f"[Completion] : Triggered by {feature.__class__.__name__}")
-        completions.extend(feature.complete(doc, pos, match))
+        completions.extend(feature.complete(doc, pos, match, ls))
 
     return completions
 
 
 @server.feature(types.TEXT_DOCUMENT_DEFINITION)
 def on_go_to_definition(ls: LanguageServer, params: types.DefinitionParams):
-
-    types.TextDocumentDefinitionResponse
 
     document = ls.workspace.get_document(params.text_document.uri)
 
