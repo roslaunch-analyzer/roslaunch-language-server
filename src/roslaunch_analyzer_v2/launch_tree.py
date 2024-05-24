@@ -266,12 +266,9 @@ class LoadComposableNodesNode(ActionNode):
             n._ComposableNode__node_name = _to_string(self.service.context, n.node_name)
             return n
 
-        self.children: List[LaunchTreeNode] = list(
-            map(
-                lambda entity: ComposableNodeContainerNode(
-                    make_composable_node(entity), self.service
-                ),
-                self.entity._LoadComposableNodes__composable_node_descriptions,
-            )
-        )
+        self.children: List[LaunchTreeNode] = [
+            ComposableNodeContainerNode(make_composable_node(entity), self.service)
+            for entity in self.entity._LoadComposableNodes__composable_node_descriptions
+        ]
+
         return self

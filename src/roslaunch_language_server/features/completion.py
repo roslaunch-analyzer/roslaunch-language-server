@@ -10,13 +10,12 @@ from lsprotocol.types import (
     InsertTextFormat,
     Position,
 )
-from pygls.server import LanguageServer
 from pygls.workspace import TextDocument
 
 from roslaunch_language_server.utils import all_env_vars, all_ros_packages
 
 
-class CompletionFeature:
+class CompletionFeatureEntity:
     """
     Base class for completion features in ROS XML launch files.
     Each subclass must define a pattern property and implement the complete method.
@@ -31,7 +30,7 @@ class CompletionFeature:
         raise NotImplementedError("The pattern property must be implemented.")
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items based on the match.
@@ -40,13 +39,12 @@ class CompletionFeature:
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
         :return: A list of completion items.
         """
         raise NotImplementedError("The complete method must be implemented.")
 
 
-class SubstitutionCompletion(CompletionFeature):
+class SubstitutionCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <substitution> in $(<substitution>).
     """
@@ -66,7 +64,7 @@ class SubstitutionCompletion(CompletionFeature):
     ]
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <substitution> in $(<substitution>).
@@ -74,7 +72,7 @@ class SubstitutionCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
+
         :return: A list of completion items.
         """
         semantics_name_prefix: str = match.group("semantics_name_prefix")
@@ -89,7 +87,7 @@ class SubstitutionCompletion(CompletionFeature):
         ]
 
 
-class FindPkgSharePkgNameCompletion(CompletionFeature):
+class FindPkgSharePkgNameCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <package_name> in $(find-pkg-share <package_name>).
     """
@@ -99,7 +97,7 @@ class FindPkgSharePkgNameCompletion(CompletionFeature):
     )
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <package_name> in $(find-pkg-share <package_name>).
@@ -107,7 +105,6 @@ class FindPkgSharePkgNameCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
         :return: A list of completion items.
         """
         pkg_name_prefix: str = match.group("pkg_name_prefix")
@@ -122,7 +119,7 @@ class FindPkgSharePkgNameCompletion(CompletionFeature):
         ]
 
 
-class EnvCompletion(CompletionFeature):
+class EnvCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <env_variable> in $(env <env_variable>).
     """
@@ -130,7 +127,7 @@ class EnvCompletion(CompletionFeature):
     pattern = re.compile(r"\".*?\$\(env\s+(?P<env_var_prefix>[a-zA-Z0-9_-]*)$")
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <env_variable> in $(env <env_variable>).
@@ -138,7 +135,6 @@ class EnvCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
         :return: A list of completion items.
         """
         env_var_prefix: str = match.group("env_var_prefix")
@@ -153,7 +149,7 @@ class EnvCompletion(CompletionFeature):
         ]
 
 
-class FindPkgShareSuffixPathCompletion(CompletionFeature):
+class FindPkgShareSuffixPathCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <path> in $(find-pkg-share <package_name>)/<path>.
     """
@@ -163,7 +159,7 @@ class FindPkgShareSuffixPathCompletion(CompletionFeature):
     )
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <path> in $(find-pkg-share package_name)/<path>.
@@ -171,7 +167,7 @@ class FindPkgShareSuffixPathCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
+
         :return: A list of completion items.
         """
         package_name: str = match.group("package_name")
@@ -205,7 +201,7 @@ class FindPkgShareSuffixPathCompletion(CompletionFeature):
         ]
 
 
-class EnvHomeSuffixPathCompletion(CompletionFeature):
+class EnvHomeSuffixPathCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <path> of $(env HOME)/<path>.
     """
@@ -213,7 +209,7 @@ class EnvHomeSuffixPathCompletion(CompletionFeature):
     pattern = re.compile(r"\".*?\$\(env\s+HOME\)(?P<path_suffix>.*)$")
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <path> within a package's share directory.
@@ -221,7 +217,6 @@ class EnvHomeSuffixPathCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
         :return: A list of completion items.
         """
         path_suffix: str = match.group("path_suffix")
@@ -251,7 +246,7 @@ class EnvHomeSuffixPathCompletion(CompletionFeature):
         ]
 
 
-class VarCompletion(CompletionFeature):
+class VarCompletion(CompletionFeatureEntity):
     """
     Provides completion items for <variable_name> in $(var <variable_name>).
     """
@@ -259,7 +254,7 @@ class VarCompletion(CompletionFeature):
     pattern = re.compile(r"\".*?\$\(var\s+(?P<var_name_prefix>[a-zA-Z0-9_-]*)$")
 
     def complete(
-        self, doc: TextDocument, pos: Position, match: re.Match, ls: LanguageServer
+        self, doc: TextDocument, pos: Position, match: re.Match
     ) -> List[CompletionItem]:
         """
         Generates completion items for <variable_name> in $(var <variable_name>).
@@ -267,14 +262,13 @@ class VarCompletion(CompletionFeature):
         :param doc: The text document in which completion is triggered.
         :param pos: The position in the document where completion is triggered.
         :param match: The regex match object.
-        :param ls: The language server instance.
         :return: A list of completion items.
         """
         var_name_prefix: str = match.group("var_name_prefix")
         parser = ET.XMLPullParser(events=("start", "end"))
 
         text_before_cursor = (
-            "".join(doc.lines[: pos.line]) + doc.lines[pos.line][: pos.character]
+            "".join(doc.lines[: pos.line - 1]) + doc.lines[pos.line][: pos.character]
         )
 
         parser.feed(text_before_cursor)
@@ -309,7 +303,7 @@ class VarCompletion(CompletionFeature):
         ]
 
 
-completion_features: List[CompletionFeature] = [
+completion_feature_eitities: List[CompletionFeatureEntity] = [
     SubstitutionCompletion(),
     FindPkgSharePkgNameCompletion(),
     EnvCompletion(),

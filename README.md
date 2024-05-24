@@ -27,3 +27,9 @@ pipx install git+https://github.com/roslaunch-analyzer/roslaunch-language-server
 1. This project uses [poetry](https://python-poetry.org/) for dependency management. First, you need to [install poetry](https://python-poetry.org/docs/#installation).
 2. Clone the repository and navigate to the project directory.
 3. Run `poetry install` to install the dependencies.
+
+### Features
+
+#### 1. Analyze Launchfile
+
+#### 2. Language Support for Built-in Substitutions
