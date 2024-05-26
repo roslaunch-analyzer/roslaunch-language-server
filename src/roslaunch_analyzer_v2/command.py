@@ -1,18 +1,15 @@
 import os
-from dataclasses import dataclass
-from functools import cache
-from typing import List, Text, Tuple
+from typing import Text
 
 from launch import LaunchService
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import AnyLaunchDescriptionSource
-from rclpy.logging import get_logger
 from ros2launch.api.api import get_share_file_path_from_package, parse_launch_arguments
 
 from roslaunch_analyzer_v2.launch_tree import IncludeLaunchDescriptionNode
 
 
-def command2tree(launch_command: Text) -> dict:
+def command2tree(launch_command: Text) -> IncludeLaunchDescriptionNode:
 
     argv = launch_command.replace("ros2 launch ", "").split(" ")
 
