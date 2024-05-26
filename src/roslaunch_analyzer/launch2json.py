@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import cache
 from typing import List, Text, Tuple
 
+import launch
 from launch import LaunchService
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import AnyLaunchDescriptionSource
@@ -61,7 +62,6 @@ def get_entity_and_launch_service(launch_info: LaunchInfo):
 @cache
 def analyse_launch_structure(launch_command: Text):
     launch_info = LaunchInfo.from_command(launch_command)
-    print(launch_info)
     root_entity, launch_service = get_entity_and_launch_service(launch_info)
     raw_tree = create_entity_tree(root_entity, launch_service)
     filtered_tree = filter_entity_tree(raw_tree.copy())

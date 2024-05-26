@@ -1,7 +1,6 @@
 import os
 import pathlib
 from typing import Optional
-
 import launch
 import launch_ros
 from launch.substitutions import LaunchConfiguration
