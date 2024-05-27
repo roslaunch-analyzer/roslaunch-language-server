@@ -1,0 +1,6 @@
+[submodule "src/launch_ros"]
+	path = src/launch_ros
+	url = https://github.com/roslaunch-analyzer/launch_ros.git
+[submodule "src/launch"]
+	path = src/launch
+	url = https://github.com/roslaunch-analyzer/launch.git
