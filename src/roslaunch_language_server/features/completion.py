@@ -1,8 +1,8 @@
 import os
 import re
-import xml.etree.ElementTree as ET
 from typing import List
 
+import lxml.etree as etree
 from ament_index_python.packages import get_package_share_directory
 from lsprotocol.types import (
     CompletionItem,
@@ -12,6 +12,7 @@ from lsprotocol.types import (
 )
 from pygls.workspace import TextDocument
 
+from roslaunch_language_server.server import logger
 from roslaunch_language_server.utils import all_env_vars, all_ros_packages
 
 
@@ -265,33 +266,40 @@ class VarCompletion(CompletionFeatureEntity):
         :return: A list of completion items.
         """
         var_name_prefix: str = match.group("var_name_prefix")
-        parser = ET.XMLPullParser(events=("start", "end"))
+        parser = etree.XMLPullParser(events=("start", "end"))
 
-        text_before_cursor = (
-            "".join(doc.lines[: pos.line - 1]) + doc.lines[pos.line][: pos.character]
-        )
+        text_before_cursor = doc.source[: doc.offset_at_position(pos)]
 
         parser.feed(text_before_cursor)
 
-        elems: List[ET.Element] = [
-            elem for event, elem in parser.read_events() if event == "start"
-        ]
+        elems = []
+
+        # extract not ended elem
+        for event, elem in parser.read_events():
+            elem: etree.Element
+            if event == "start":
+                elems.append(elem)
+            if event == "end":
+                elems.remove(elem)
 
         launch = elems[0]
         args = [elem.get("name") for elem in launch.findall("arg")]
 
-        def search_let(elem: ET.Element):
+        last_elem = elems[-1]
+
+        def search_let(elem: etree.Element):
             """
             Recursively search for 'let' elements within the given element.
             """
-            children = list(elem)
-            if not children:
-                return []
-            return [e.get("name") for e in elem.findall("let")] + search_let(
-                children[-1]
-            )
+            parent = elem.getparent()
 
-        lets = search_let(launch)
+            if not parent:
+                return []
+            else:
+                logger.debug(f"Next Parents Tag: {parent.tag}, {parent.items()}")
+                return [e.get("name") for e in elem.findall("let")] + search_let(parent)
+
+        lets = search_let(last_elem)
 
         return [
             CompletionItem(
@@ -303,6 +311,36 @@ class VarCompletion(CompletionFeatureEntity):
         ]
 
 
+class NodePkgCompletion(CompletionFeatureEntity):
+    """
+    Provides completion items for <package_name> in <node pkg="<package_name>".
+    """
+
+    pattern = re.compile(r"\<node[^<]*pkg\s*=\s*\"(?P<pkg_name_prefix>[a-zA-Z0-9_-]*)$")
+
+    def complete(
+        self, doc: TextDocument, pos: Position, match: re.Match
+    ) -> List[CompletionItem]:
+        """
+        Generates completion items for <package_name> in <node pkg="<package_name>" />.
+
+        :param doc: The text document in which completion is triggered.
+        :param pos: The position in the document where completion is triggered.
+        :param match: The regex match object.
+        :return: A list of completion items.
+        """
+        pkg_name_prefix: str = match.group("pkg_name_prefix")
+        pattern = re.compile(r"^" + pkg_name_prefix + r"[a-zA-Z0-9_-]*")
+        return [
+            CompletionItem(
+                label=match.string,
+                kind=CompletionItemKind.Module,
+                insert_text_format=InsertTextFormat.PlainText,
+            )
+            for match in filter(None, map(pattern.match, all_ros_packages))
+        ]
+
+
 completion_feature_eitities: List[CompletionFeatureEntity] = [
     SubstitutionCompletion(),
     FindPkgSharePkgNameCompletion(),
@@ -310,4 +348,5 @@ completion_feature_eitities: List[CompletionFeatureEntity] = [
     FindPkgShareSuffixPathCompletion(),
     EnvHomeSuffixPathCompletion(),
     VarCompletion(),
+    NodePkgCompletion(),
 ]

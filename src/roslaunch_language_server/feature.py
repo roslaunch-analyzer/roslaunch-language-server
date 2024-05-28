@@ -1,3 +1,5 @@
+from typing import List
+
 from lsprotocol import types
 from pygls.server import LanguageServer
 
@@ -6,7 +8,6 @@ from roslaunch_language_server.features import (
     definition_feature_eitities,
 )
 from roslaunch_language_server.server import logger, server
-from typing import List
 
 
 @server.feature("hello_world")
@@ -28,7 +29,7 @@ def parse_launch_file(ls: LanguageServer, params: dict):
 @server.feature(
     types.TEXT_DOCUMENT_COMPLETION,
     types.CompletionOptions(
-        trigger_characters=["$", "(", " ", "/"],
+        trigger_characters=["$", "(", " ", "/", '"'],
     ),
 )
 def on_completion(ls: LanguageServer, params: types.CompletionParams):
@@ -38,7 +39,7 @@ def on_completion(ls: LanguageServer, params: types.CompletionParams):
     doc = ls.workspace.get_document(uri)
 
     text_before_cursor = (
-        "".join(doc.lines[: pos.line - 1]) + doc.lines[pos.line][: pos.character]
+        "".join(doc.lines[: pos.line]) + doc.lines[pos.line][: pos.character]
     )
 
     logger.debug(f"Completion triggered at {pos.line}:{pos.character}")
@@ -64,9 +65,12 @@ def on_go_to_definition(ls: LanguageServer, params: types.DefinitionParams):
     definitions: List[types.Location] = []
 
     for feature in definition_feature_eitities:
-        extracted_string = doc.word_at_position(
-            pos, feature.re_start_quote, feature.re_end_quote
-        )
+        try:
+            extracted_string = doc.word_at_position(
+                pos, feature.re_start_quote, feature.re_end_quote
+            )
+        except IndexError:
+            continue
         if extracted_string is None:
             continue
         logger.debug(f"Extracted string: {extracted_string}")
