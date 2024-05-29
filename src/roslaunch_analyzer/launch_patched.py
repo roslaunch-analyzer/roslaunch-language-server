@@ -1,4 +1,3 @@
-import launch
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description import (
     DeclareLaunchArgument,

@@ -1,11 +1,12 @@
 import asyncio
 import logging
 
+import launch
 import launch_ros
 from launch.utilities import normalize_to_list_of_substitutions, perform_substitutions
 from rclpy.logging import get_logger
 
-from .launch_patched import launch
+import roslaunch_analyzer.launch_patched  # noqa
 
 logger = get_logger("launch2json")
 
