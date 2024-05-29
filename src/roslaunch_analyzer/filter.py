@@ -1,5 +1,7 @@
-import launch
 import launch_ros
+import launch
+from .launch_patched import LaunchDescription
+
 from rclpy.logging import get_logger
 
 logger = get_logger("launch2json")
@@ -8,12 +10,12 @@ container_classes = (
     launch.actions.GroupAction,
     launch.actions.IncludeLaunchDescription,
     launch.actions.OpaqueFunction,
-    launch.LaunchDescription,
+    LaunchDescription,
 )
 
 ignore_container_classes = (
     launch.actions.OpaqueFunction,
-    launch.LaunchDescription,
+    LaunchDescription,
 )
 
 ignore_classes = (

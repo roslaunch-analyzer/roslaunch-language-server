@@ -8,6 +8,12 @@ from roslaunch_language_server.features import (
 from roslaunch_language_server.server import logger, server
 from typing import List
 
+from .helper import create_tree,remove_group_action_nodes,find_symlinks
+import xml.etree.ElementTree as ET
+
+#enable nested async loop
+import nest_asyncio
+nest_asyncio.apply()
 
 @server.feature("hello_world")
 def hello_world(ls: LanguageServer, params: dict):
@@ -17,13 +23,33 @@ def hello_world(ls: LanguageServer, params: dict):
 
 
 @server.feature("parse_launch_file")
-def parse_launch_file(ls: LanguageServer, params: dict):
+def parse_launch_file(ls: LanguageServer, params:dict):
+    command = ["ros2 launch",find_symlinks(params.filepath,params.colcon_path)]
+    for k,v in params.arguments:
+        command.append(f"{k}:={v}")
+    command = " ".join(command)
+    print(command)
     from roslaunch_analyzer import analyse_launch_structure
+    launch_tree = create_tree(analyse_launch_structure(command))
+    remove_group_action_nodes(launch_tree)
+    tree_info = launch_tree.to_dict()
+    return tree_info
 
-    launch_command = params["command"]
-    logger.debug(f"Received launch command: {launch_command}")
-    return analyse_launch_structure(launch_command)
+@server.feature("get_launch_file_parameters")
+def parse_launch_file(ls: LanguageServer, params: dict):
+    tree = ET.parse(params.filepath)
+    root = tree.getroot()
+    params = {}
+    for arg in root.findall('arg'):
+        name = arg.get('name')
+        default = arg.get('default', '')  # If no default value, set as 'N/A'
+        description = arg.get('description', 'No Description Available')  # If no description, set as 'N/A'
+        params[name] ={
+                'default': default,
+                'description': description
+            }
 
+    return params
 
 @server.feature(
     types.TEXT_DOCUMENT_COMPLETION,
