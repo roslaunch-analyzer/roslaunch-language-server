@@ -12,7 +12,6 @@ from lsprotocol.types import (
 )
 from pygls.workspace import TextDocument
 
-from roslaunch_language_server.server import logger
 from roslaunch_language_server.utils import all_env_vars, all_ros_packages
 
 
@@ -78,6 +77,7 @@ class SubstitutionCompletion(CompletionFeatureEntity):
         """
         semantics_name_prefix: str = match.group("semantics_name_prefix")
         pattern = re.compile(r"^" + semantics_name_prefix + r"[a-z-]*")
+        # TODO: check whether the end-bracket is present and if not, add it
         return [
             CompletionItem(
                 label=match.string,
@@ -268,46 +268,45 @@ class VarCompletion(CompletionFeatureEntity):
         var_name_prefix: str = match.group("var_name_prefix")
         parser = etree.XMLPullParser(events=("start", "end"))
 
-        text_before_cursor = doc.source[: doc.offset_at_position(pos)]
+        try:
+            text_before_element_at_cursor = (
+                doc.source[: doc.offset_at_position(pos)]
+                + re.search(
+                    r"^([^>^<]*>)", doc.source[doc.offset_at_position(pos) :]
+                ).group()
+            )
+        except AttributeError:
+            return []
 
-        parser.feed(text_before_cursor)
+        parser.feed(text_before_element_at_cursor)
 
-        elems = []
+        event, elem_at_cursor = list(parser.read_events())[-1]
 
-        # extract not ended elem
-        for event, elem in parser.read_events():
-            elem: etree.Element
-            if event == "start":
-                elems.append(elem)
-            if event == "end":
-                elems.remove(elem)
-
-        launch = elems[0]
-        args = [elem.get("name") for elem in launch.findall("arg")]
-
-        last_elem = elems[-1]
-
-        def search_let(elem: etree.Element):
-            """
-            Recursively search for 'let' elements within the given element.
-            """
+        def search_usable_variable(elem: etree.Element, tag: str = "arg"):
             parent = elem.getparent()
-
-            if not parent:
-                return []
+            if parent is not None:
+                return [
+                    e.get("name")
+                    for e in parent.findall(tag)
+                    if e.get("name", "").startswith(var_name_prefix)
+                ] + search_usable_variable(parent, tag)
             else:
-                logger.debug(f"Next Parents Tag: {parent.tag}, {parent.items()}")
-                return [e.get("name") for e in elem.findall("let")] + search_let(parent)
+                return []
 
-        lets = search_let(last_elem)
+        usable_vars = search_usable_variable(
+            elem_at_cursor, "arg"
+        ) + search_usable_variable(elem_at_cursor, "let")
+
+        # Remove duplicates
+        usable_vars = list(set(usable_vars))
 
         return [
             CompletionItem(
-                label=arg,
+                label=var,
                 kind=CompletionItemKind.Variable,
                 insert_text_format=InsertTextFormat.PlainText,
             )
-            for arg in filter(lambda x: x.startswith(var_name_prefix), args + lets)
+            for var in usable_vars
         ]
 
 
