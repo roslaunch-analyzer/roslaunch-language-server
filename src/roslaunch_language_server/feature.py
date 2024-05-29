@@ -40,7 +40,7 @@ def parse_launch_file(ls: LanguageServer, params: dict):
 
 
 @server.feature("get_launch_file_parameters")
-def parse_launch_file(ls: LanguageServer, params: dict):
+def get_launch_file_parameters(ls: LanguageServer, params: dict):
     tree = ET.parse(params.filepath)
     root = tree.getroot()
     params = {}
