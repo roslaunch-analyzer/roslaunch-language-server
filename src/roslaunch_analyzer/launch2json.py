@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from functools import cache
 from typing import List, Text, Tuple
 
-import launch
 from launch import LaunchService
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import AnyLaunchDescriptionSource
@@ -27,7 +26,6 @@ class LaunchInfo:
         argv = launch_command.replace("ros2 launch ", "").split(" ")
 
         if os.path.isfile(argv[0]):
-            print("HERE")
             launch_file_path = argv[0]
             return cls(
                 launch_file_path=launch_file_path,
