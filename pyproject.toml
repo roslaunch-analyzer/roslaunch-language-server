@@ -18,12 +18,14 @@ pyyaml = "^6.0.1"
 lark = "^1.1.9"
 packaging = "^24.0"
 lxml = "^5.2.2"
+nest-asyncio = "^1.6.0"
 
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"
 isort = "^5.13.2"
 black = "^24.4.2"
+ipykernel = "^6.29.4"
 
 [build-system]
 requires = ["poetry-core"]
