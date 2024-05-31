@@ -29,13 +29,17 @@ class Node:
 
 def create_tree(launch_tree, parent=None):
     if "entity" not in launch_tree:
-        return None
+        if launch_tree.get("type","")=="Node":
+            title = launch_tree.get("name", "")
+            node = Node(title, "", "Node", parent)
+            return node
+        else:
+            return None
     node_type = launch_tree["entity"]["type"]
 
     # Filter nodes by type
-    if node_type not in ["GroupAction", "IncludeLaunchDescription"]:
-        return None
-
+    # if node_type not in ["GroupAction", "IncludeLaunchDescription"]:
+    #     return None
     title = launch_tree["entity"].get("file_name", "")
     path = launch_tree["entity"].get("full_path", "")
 
@@ -54,7 +58,7 @@ def remove_group_action_nodes(node):
         remove_group_action_nodes(child)
 
     # If the current node is a GroupAction, reassign its children to its parent
-    if node.type == "GroupAction":
+    if node.type in ["GroupAction","LoadComposableNodes","ComposableNodeContainer"]:
         if node.parent:
             for child in node.children:
                 node.parent.add_child(child)

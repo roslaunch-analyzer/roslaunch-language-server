@@ -5,6 +5,7 @@ import nest_asyncio
 from lsprotocol import types
 from lxml import etree
 from pygls.server import LanguageServer
+from roslaunch_analyzer import get_launch_file_arguments
 
 from roslaunch_language_server.features import (
     completion_feature_eitities,
@@ -33,7 +34,6 @@ def parse_launch_file(ls: LanguageServer, params: dict):
     for k, v in params.arguments:
         command.append(f"{k}:={v}")
     command = " ".join(command)
-    print(command)
     from roslaunch_analyzer import analyse_launch_structure
 
     launch_tree = create_tree(analyse_launch_structure(command))
@@ -44,18 +44,7 @@ def parse_launch_file(ls: LanguageServer, params: dict):
 
 @server.feature("get_launch_file_parameters")
 def get_launch_file_parameters(ls: LanguageServer, params: dict):
-    tree = etree.parse(params.filepath)
-    root = tree.getroot()
-    params = {}
-    for arg in root.findall("arg"):
-        name = arg.get("name")
-        default = arg.get("default", "")  # If no default value, set as 'N/A'
-        description = arg.get(
-            "description", "No Description Available"
-        )  # If no description, set as 'N/A'
-        params[name] = {"default": default, "description": description}
-
-    return params
+    return get_launch_file_arguments(params.filepath)
 
 
 @server.feature(
