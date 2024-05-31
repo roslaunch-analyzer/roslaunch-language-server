@@ -4,7 +4,7 @@ cli = typer.Typer()
 
 
 @cli.command()
-def run(port: int = None):
+def run(port: int = 8080):
     import roslaunch_language_server.feature  # noqa
     from roslaunch_language_server.server import server
 

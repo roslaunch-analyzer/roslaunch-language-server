@@ -1,12 +1,12 @@
 import os
 from typing import Text
 
-from launch import LaunchService
+from launch import LaunchContext
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from ros2launch.api.api import get_share_file_path_from_package, parse_launch_arguments
 
-from roslaunch_analyzer_v2.launch_tree import IncludeLaunchDescriptionNode
+from .tree import IncludeLaunchDescriptionNode
 
 
 def command2tree(launch_command: Text) -> IncludeLaunchDescriptionNode:
@@ -30,6 +30,6 @@ def command2tree(launch_command: Text) -> IncludeLaunchDescriptionNode:
         launch_arguments=launch_file_arguments,
     )
 
-    service = LaunchService(argv=launch_file_arguments)
+    context = LaunchContext(argv=launch_file_arguments)
 
-    return IncludeLaunchDescriptionNode(entity=entity, service=service)
+    return IncludeLaunchDescriptionNode(entity=entity, context=context)
