@@ -6,7 +6,6 @@ authors = ["Y.Hisaki <yhisaki31@gmail.com>"]
 readme = "README.md"
 packages = [
     { include = "roslaunch_analyzer", from = "src" },
-    { include = "roslaunch_analyzer_v2", from = "src" },
     { include = "roslaunch_language_server", from = "src" },
 ]
 

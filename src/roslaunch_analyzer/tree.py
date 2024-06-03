@@ -1,7 +1,7 @@
 import itertools
 from typing import Any, Dict, List, Optional
 
-from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
+from launch import Action, LaunchContext, LaunchDescription, LaunchDescriptionEntity
 from launch.actions import (
     DeclareLaunchArgument,
     GroupAction,
@@ -25,7 +25,7 @@ from launch_ros.actions import (
 from launch_ros.descriptions import ComposableNode
 
 from .parameter import serialize_parameters
-from .utils import find_linked_path, specify_package_from_launch_file_path
+from .utils import extract_package_name, resolve_symlink
 
 
 class LaunchTreeNodeRegistry:
@@ -51,7 +51,7 @@ class LaunchTreeNodeRegistry:
         return decorator
 
     @classmethod
-    def get_node(cls, entity, context):
+    def get_node(cls, entity, context) -> Optional["LaunchTreeNode"]:
         """
         Get the registered tree node for a given entity.
 
@@ -66,7 +66,7 @@ class LaunchTreeNodeRegistry:
         return node_cls(entity, context) if node_cls else None
 
 
-def _to_string(context, substitutions):
+def to_string(context: LaunchContext, substitutions: Any) -> str:
     """
     Convert substitutions to their string representation.
 
@@ -94,9 +94,17 @@ class LaunchTreeNode:
     def __init__(self, entity: LaunchDescriptionEntity, context: LaunchContext):
         self.entity = entity
         self.context = context
-        self.children = []
+        self.children: List[LaunchTreeNode] = []
 
-    def _make_children(self, sub_entities: Optional[List[LaunchDescriptionEntity]]):
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        pass
+
+    def build_children(
+        self, sub_entities: Optional[List[LaunchDescriptionEntity]]
+    ) -> List["LaunchTreeNode"]:
         """
         Create child nodes for the given sub-entities.
 
@@ -110,27 +118,37 @@ class LaunchTreeNode:
             return []
 
         return [
-            child.build()
+            built_child
             for entity in sub_entities
             if (child := LaunchTreeNodeRegistry.get_node(entity, self.context))
+            if (built_child := child.build())
         ]
 
-    def build(self):
+    def build(self) -> Optional["LaunchTreeNode"]:
         """
         Build the tree node and its children by visiting the entity.
 
         Returns:
-            The built tree node.
+            The built tree node or None if the entity's condition evaluates to False.
         """
+        if isinstance(self.entity, Action):
+            if (
+                self.entity.condition is not None
+                and not self.entity.condition.evaluate(self.context)
+            ):
+                return None
+
         try:
             sub_entities = self.entity.visit(self.context)
         except Exception as e:
             print(f"Error in {self.entity.__class__}: {e}")
-            return
-        self.children = self._make_children(sub_entities)
+            return None
+
+        self.complete_entity_info()
+        self.children = self.build_children(sub_entities)
         return self
 
-    def _serialize_children(self):
+    def serialize_children(self) -> List[Dict[str, Any]]:
         """
         Serialize the child nodes.
 
@@ -141,7 +159,16 @@ class LaunchTreeNode:
             itertools.chain.from_iterable(child._serialize() for child in self.children)
         )
 
-    def _serialize(self):
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Serialize the node and return the first element of the serialized result.
+
+        Returns:
+            The serialized representation of the node.
+        """
+        return self._serialize()[0]
+
+    def _serialize(self) -> List[Dict[str, Any]]:
         """
         Serialize the node.
 
@@ -150,22 +177,13 @@ class LaunchTreeNode:
         """
         raise NotImplementedError()
 
-    def serialize(self):
-        """
-        Serialize the node and return the first element of the serialized result.
-
-        Returns:
-            The first element of the serialized result.
-        """
-        return self._serialize()[0]
-
 
 class IgnoredNode(LaunchTreeNode):
     """
     Node that is ignored in the serialization process.
     """
 
-    def _serialize(self):
+    def _serialize(self) -> List[Dict[str, Any]]:
         return []
 
 
@@ -174,8 +192,8 @@ class SplicedNode(LaunchTreeNode):
     Node that splices its children directly into the serialized output.
     """
 
-    def _serialize(self):
-        return self._serialize_children()
+    def _serialize(self) -> List[Dict[str, Any]]:
+        return self.serialize_children()
 
 
 @LaunchTreeNodeRegistry.register(action_cls=LaunchDescription)
@@ -261,15 +279,22 @@ class GroupActionNode(LaunchTreeNode):
 
     entity: GroupAction
 
-    def _serialize(self):
-        children = self._serialize_children()
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        self.scoped: bool = self.entity._GroupAction__scoped
+        self.forwarding: bool = self.entity._GroupAction__forwarding
+
+    def _serialize(self) -> List[Dict[str, Any]]:
+        children = self.serialize_children()
         if not children:
             return []
         return [
             {
                 "type": "GroupAction",
-                "scoped": self.entity._GroupAction__scoped,
-                "forwarding": self.entity._GroupAction__forwarding,
+                "scoped": self.scoped,
+                "forwarding": self.forwarding,
                 "children": children,
             }
         ]
@@ -281,15 +306,22 @@ class IncludeLaunchDescriptionNode(LaunchTreeNode):
 
     entity: IncludeLaunchDescription
 
-    def _serialize(self):
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        self.package: Optional[str] = extract_package_name(
+            self.entity._get_launch_file()
+        )
+        self.path: str = resolve_symlink(self.entity._get_launch_file())
+
+    def _serialize(self) -> List[Dict[str, Any]]:
         return [
             {
                 "type": "IncludeLaunchDescription",
-                "path": find_linked_path(self.entity._get_launch_file()),
-                "package": specify_package_from_launch_file_path(
-                    self.entity._get_launch_file()
-                ),
-                "children": self._serialize_children(),
+                "path": self.path,
+                "package": self.package,
+                "children": self.serialize_children(),
             }
         ]
 
@@ -300,18 +332,28 @@ class NodeNode(LaunchTreeNode):
 
     entity: Node
 
-    def _serialize(self):
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        self.package: str = to_string(self.context, self.entity.node_package)
+        self.executable: str = to_string(self.context, self.entity.node_executable)
+        self.namespace: str = to_string(
+            self.context, self.entity.expanded_node_namespace
+        )
+        self.name: str = to_string(self.context, self.entity.node_name)
+        self.parameters = serialize_parameters(self.entity._Node__parameters)
+
+    def _serialize(self) -> List[Dict[str, Any]]:
         return [
             {
                 "type": "Node",
-                "package": _to_string(self.context, self.entity.node_package),
-                "executable": _to_string(self.context, self.entity.node_executable),
-                "name": _to_string(self.context, self.entity.node_name),
-                "namespace": _to_string(
-                    self.context, self.entity.expanded_node_namespace
-                ),
-                "parameters": serialize_parameters(self.entity._Node__parameters),
-                "children": self._serialize_children(),
+                "package": self.package,
+                "executable": self.executable,
+                "name": self.name,
+                "namespace": self.namespace,
+                "parameters": self.parameters,
+                "children": self.serialize_children(),
             }
         ]
 
@@ -322,18 +364,28 @@ class ComposableNodeContainerNode(LaunchTreeNode):
 
     entity: ComposableNodeContainer
 
-    def _serialize(self):
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        self.package: str = to_string(self.context, self.entity.node_package)
+        self.executable: str = to_string(self.context, self.entity.node_executable)
+        self.namespace: str = to_string(
+            self.context, self.entity.expanded_node_namespace
+        )
+        self.name: str = to_string(self.context, self.entity.node_name)
+        self.parameters = serialize_parameters(self.entity._Node__parameters)
+
+    def _serialize(self) -> List[Dict[str, Any]]:
         return [
             {
                 "type": "ComposableNodeContainer",
-                "package": _to_string(self.context, self.entity.node_package),
-                "executable": _to_string(self.context, self.entity.node_executable),
-                "name": _to_string(self.context, self.entity.node_name),
-                "namespace": _to_string(
-                    self.context, self.entity.expanded_node_namespace
-                ),
-                "parameters": serialize_parameters(self.entity._Node__parameters),
-                "children": self._serialize_children(),
+                "package": self.package,
+                "executable": self.executable,
+                "name": self.name,
+                "namespace": self.namespace,
+                "parameters": self.parameters,
+                "children": self.serialize_children(),
             }
         ]
 
@@ -344,7 +396,7 @@ class LoadComposableNodesNode(LaunchTreeNode):
 
     entity: LoadComposableNodes
 
-    def __serialize_composable_node(self, entity: ComposableNode):
+    def serialize_composable_node(self, entity: ComposableNode) -> Dict[str, Any]:
         """
         Serialize a ComposableNode entity.
 
@@ -355,21 +407,30 @@ class LoadComposableNodesNode(LaunchTreeNode):
             A serialized representation of the ComposableNode.
         """
         return {
-            "package": _to_string(self.context, entity.package),
-            "plugin": _to_string(self.context, entity.node_plugin),
-            "namespace": _to_string(self.context, entity.node_namespace),
-            "name": _to_string(self.context, entity.node_name),
+            "package": to_string(self.context, entity.package),
+            "plugin": to_string(self.context, entity.node_plugin),
+            "namespace": to_string(self.context, entity.node_namespace),
+            "name": to_string(self.context, entity.node_name),
             "parameters": serialize_parameters(entity._ComposableNode__parameters),
         }
 
-    def _serialize(self):
+    def complete_entity_info(self):
+        """
+        Complete any additional information required for the entity.
+        """
+        self.target_container: str = (
+            self.entity._LoadComposableNodes__final_target_container_name
+        )
+        self.loaded_nodes = [
+            self.serialize_composable_node(entity)
+            for entity in self.entity._LoadComposableNodes__composable_node_descriptions
+        ]
+
+    def _serialize(self) -> List[Dict[str, Any]]:
         return [
             {
                 "type": "LoadComposableNodes",
-                "target_container": self.entity._LoadComposableNodes__final_target_container_name,
-                "loaded_nodes": [
-                    self.__serialize_composable_node(entity)
-                    for entity in self.entity._LoadComposableNodes__composable_node_descriptions
-                ],
+                "target_container": self.target_container,
+                "loaded_nodes": self.loaded_nodes,
             }
         ]

@@ -10,7 +10,7 @@ from lsprotocol.types import Location, Position, Range
 from lxml import etree
 from pygls.workspace import TextDocument
 
-from roslaunch_analyzer_v2.utils import find_linked_path
+from roslaunch_analyzer.utils import resolve_symlink
 from roslaunch_language_server.server import logger
 
 
@@ -78,7 +78,7 @@ class FindPkgSharePathDefinition(DefinitionFeatureEntity):
                 f"Failed to find share directory for package '{pkg_name}'"
             )
             return []
-        resolved_path = find_linked_path(
+        resolved_path = resolve_symlink(
             os.path.join(pkg_share_path, relative_path.lstrip("/"))
         )
         self.logger.debug(f"Resolved path: {resolved_path}")

@@ -21,6 +21,8 @@ def execute(
     self.prepare(context)
     name = self.process_description.final_name
 
+    # print(f"ExecuteLocal action '{name}': executed")
+
     if self._ExecuteLocal__executed:
         raise RuntimeError(
             f"ExecuteLocal action '{name}': executed more than once: {self.describe()}"
