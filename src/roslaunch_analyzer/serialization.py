@@ -101,9 +101,11 @@ def _make_entity_serializable(entity: launch.LaunchDescriptionEntity):
     d = {}
     d["type"] = entity.__class__.__name__
     if type(entity) is launch.actions.IncludeLaunchDescription:
-        d["package"] = re.search(
+        package_search =  re.search(
             r"install/([^/]+)/share/\1", entity._get_launch_file()
-        ).group(1)
+        )
+        if package_search is not None:
+            d["package"] = package_search.group(1)
         d["file_name"] = entity._get_launch_file().split("/")[-1]
         d["full_path"] = find_linked_path(entity._get_launch_file())
 
