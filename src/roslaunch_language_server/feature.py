@@ -1,20 +1,18 @@
 from typing import List
 
-# enable nested async loop
 from lsprotocol import types
-from lxml import etree
 from pygls.server import LanguageServer
+from collections import OrderedDict
+from roslaunch_analyzer import (
+    get_arguments_of_launch_file,
+    command_to_tree,
+    LaunchCommand,
+)
 
 from roslaunch_language_server.features import (
     completion_feature_eitities,
     definition_feature_eitities,
 )
-
-# from roslaunch_language_server.helper import (
-#     create_tree,
-#     find_symlinks,
-#     remove_group_action_nodes,
-# )
 from roslaunch_language_server.server import logger, server
 
 
@@ -27,34 +25,18 @@ def hello_world(ls: LanguageServer, params: dict):
 
 @server.feature("parse_launch_file")
 def parse_launch_file(ls: LanguageServer, params: dict):
-    # command = ["ros2 launch", find_symlinks(params.filepath, params.colcon_path)]
-    # for k, v in params.arguments:
-    #     command.append(f"{k}:={v}")
-    # command = " ".join(command)
-    # print(command)
-    # from roslaunch_analyzer import analyse_launch_structure
-
-    # launch_tree = create_tree(analyse_launch_structure(command))
-    # remove_group_action_nodes(launch_tree)
-    # tree_info = launch_tree.to_dict()
-    # return tree_info
-    return
+    command = LaunchCommand(
+        path=params.filepath, arguments=OrderedDict(params.arguments).items()
+    )
+    tree = command_to_tree(command)
+    tree.build()
+    return tree.serialize()
 
 
 @server.feature("get_launch_file_parameters")
 def get_launch_file_parameters(ls: LanguageServer, params: dict):
-    tree = etree.parse(params.filepath)
-    root = tree.getroot()
-    params = {}
-    for arg in root.findall("arg"):
-        name = arg.get("name")
-        default = arg.get("default", "")  # If no default value, set as 'N/A'
-        description = arg.get(
-            "description", "No Description Available"
-        )  # If no description, set as 'N/A'
-        params[name] = {"default": default, "description": description}
-
-    return params
+    arguments = get_arguments_of_launch_file(params.filepath)
+    return arguments
 
 
 @server.feature(

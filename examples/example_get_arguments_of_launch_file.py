@@ -4,7 +4,7 @@ from roslaunch_analyzer import get_arguments_of_launch_file, parse_command_line
 
 
 command = parse_command_line(
-    "ros2 launch autoware_launch planning_simulator.launch.xml"
+    "ros2 launch autoware_launch autoware.launch.xml"
 )
 
 arguments = get_arguments_of_launch_file(command.path)
