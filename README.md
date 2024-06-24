@@ -3,7 +3,7 @@
 
 ---
 
-This package provides a tool to analyze ROS launchfiles. It is based on the [ros2/launch](https://github.com/ros2/launch) package and provides a server that can be used to analyze launchfiles. The server can be accessed via a REST API.
+This package provides a tool to analyze ROS launchfiles. It is based on the [ros2/launch](https://github.com/ros2/launch) package and provides a server that can be used to analyze launchfiles. The server can be accessed via a [Language Server Protocol](https://microsoft.github.io/language-server-protocol/).
 
 ---
 
