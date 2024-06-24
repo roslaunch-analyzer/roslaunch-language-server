@@ -10,12 +10,10 @@ def _parse_substitution_patch(self, text):
     return [TextSubstitution(text=text)]
 
 
-Parser.parse_substitution = _parse_substitution_patch
-
-
 def get_arguments_of_launch_file(launch_file_path: str) -> dict:
 
     # monkey patching
+    Parser.parse_substitution = _parse_substitution_patch
 
     launch_description = get_launch_description_from_any_launch_file(launch_file_path)
     launch_arguments = launch_description.get_launch_arguments()

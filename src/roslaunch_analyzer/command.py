@@ -20,6 +20,7 @@ class LaunchCommand:
         path (Text): The path to the launch file.
         arguments (Dict[Text, Text]): The launch arguments as key-value pairs.
     """
+
     path: Text
     arguments: Dict[Text, Text]
 
@@ -61,7 +62,7 @@ def command_to_tree(command: LaunchCommand) -> IncludeLaunchDescriptionNode:
     """
     entity = IncludeLaunchDescription(
         AnyLaunchDescriptionSource(command.path),
-        launch_arguments=command.arguments.items(),
+        launch_arguments=command.arguments,
     )
 
     context = LaunchContext(argv=command.arguments)
