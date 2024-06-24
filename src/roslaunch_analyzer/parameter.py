@@ -104,6 +104,34 @@ def serialize_parameter_value(parameter_value: ParameterValue) -> Any:
     return parameter_value._ParameterValue__evaluated_parameter_value
 
 
+@register_serializer(tuple)
+def serialize_parameter_tuple(parameter_tuple: tuple) -> str:
+    """
+    Serialize a tuple containing parameters.
+
+    Args:
+        parameter_tuple (tuple): The tuple to serialize.
+
+    Returns:
+        str: The concatenated string of all parameters in the tuple.
+    """
+    return "".join(map(serialize_object, parameter_tuple))
+
+
+@register_serializer(list)
+def serialize_parameter_list(parameter_list: List[Any]) -> str:
+    """
+    Serialize a list containing parameters.
+
+    Args:
+        parameter_list (List[Any]): The list to serialize.
+
+    Returns:
+        str: The concatenated string of all parameters in the list.
+    """
+    return "".join(map(serialize_object, parameter_list))
+
+
 @register_serializer(dict)
 def serialize_parameter_dict(parameter_dict: Dict[Any, Any]) -> Dict[Any, Any]:
     """
@@ -135,4 +163,5 @@ def serialize_parameters(
     """
     if parameters is None:
         return {}
-    return [serialize_object(parameter) for parameter in parameters]
+    serialized = [serialize_object(parameter) for parameter in parameters]
+    return serialized

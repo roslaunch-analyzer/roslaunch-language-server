@@ -25,12 +25,15 @@ def hello_world(ls: LanguageServer, params: dict):
 
 @server.feature("parse_launch_file")
 def parse_launch_file(ls: LanguageServer, params: dict):
+    from .helper.tree import modify_json
+
     command = LaunchCommand(
         path=params.filepath, arguments=OrderedDict(params.arguments).items()
     )
     tree = command_to_tree(command)
     tree.build()
-    return tree.serialize()
+    data = modify_json(tree.serialize())[0]
+    return data
 
 
 @server.feature("get_launch_file_parameters")
