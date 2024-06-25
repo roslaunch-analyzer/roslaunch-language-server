@@ -1,14 +1,14 @@
+from collections import OrderedDict
 from typing import List
 
 from lsprotocol import types
 from pygls.server import LanguageServer
-from collections import OrderedDict
-from roslaunch_analyzer import (
-    get_arguments_of_launch_file,
-    command_to_tree,
-    LaunchCommand,
-)
 
+from roslaunch_analyzer import (
+    LaunchCommand,
+    command_to_tree,
+    get_arguments_of_launch_file,
+)
 from roslaunch_language_server.features import (
     completion_feature_eitities,
     definition_feature_eitities,
