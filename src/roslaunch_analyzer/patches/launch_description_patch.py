@@ -8,7 +8,7 @@ from launch.launch_description import (
 
 
 def get_launch_arguments_with_include_launch_description_actions(
-    self: LaunchDescription, conditional_inclusion=False
+    self: LaunchDescription, conditional_inclusion=False, **kwargs
 ) -> List[Tuple[DeclareLaunchArgument, List["IncludeLaunchDescription"]]]:
 
     from launch.actions import IncludeLaunchDescription  # noqa: F811
