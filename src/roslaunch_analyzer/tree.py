@@ -138,11 +138,7 @@ class LaunchTreeNode:
             ):
                 return None
 
-        try:
-            sub_entities = self.entity.visit(self.context)
-        except Exception as e:
-            print(f"Error in {self.entity.__class__}: {e}")
-            return None
+        sub_entities = self.entity.visit(self.context)
 
         self.complete_entity_info()
         self.children = self.build_children(sub_entities)
