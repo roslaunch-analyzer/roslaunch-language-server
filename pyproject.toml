@@ -32,6 +32,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 roslaunch-language-server = "roslaunch_language_server.cli:cli"
+roslaunch-analyzer = "roslaunch_analyzer.cli:cli"
 
 [tool.isort]
 profile = "black"
